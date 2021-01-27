@@ -1,4 +1,4 @@
-# githubTest
+# GUC Web Portal
 
 -"uml and read me" folder contains our full Readme and uml diagram
 
