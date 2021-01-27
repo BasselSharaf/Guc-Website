@@ -16,6 +16,7 @@ const jwt = require('jsonwebtoken')
 const joi = require('joi')
 const bcrypt = require('bcrypt');
 const user = require('../models/user');
+const cors = require('cors');
 
 
 
@@ -31,7 +32,7 @@ const requests=require('../models/request.model');
 
 const router = express.Router();
 
-
+router.use(cors());
 var days = ["saturday", "sunday", "monday", "tuesday", "wednesday", "thursday"];
 var types = ["hr", "hod", "ci", "cc", "am"];
 
@@ -55,7 +56,11 @@ var verifyToken = function (req, res, next) {
 }
 
 
-
+router.route('/lol')
+.get(async(req,res)=>
+{
+    res.send("here");
+})
 
 // use it to add test users but ba3d keda hateb2a hr accessed only fel a5er
 
@@ -278,13 +283,13 @@ router.route('/logout')
 
 
 router.route('/profile')
-    .get(async (req, res) => {
+    .post(async (req, res) => {
         var id = req.id;
         console.log(id)
         var profile = await user.findOne({
             id: id
-        });
-        res.send("hi " + profile);
+        }).select({password:0});
+        res.send( profile);
 
     })
     //edit profile info
@@ -477,7 +482,7 @@ router.route('/signout')
         }
     });
 
-router.route('/viewAllAttendance').get(async (req, res) => {
+router.route('/viewAllAttendance').post(async (req, res) => {
     try {
 
         var results = await attendance.find({
@@ -497,7 +502,7 @@ router.route('/viewAllAttendance').get(async (req, res) => {
 
 
 
-router.route('/viewMonthAttendance').get(async (req, res) => {
+router.route('/viewMonthAttendance').post(async (req, res) => {
     //get month attendance
     try {
 
@@ -539,11 +544,13 @@ router.route('/viewMonthAttendance').get(async (req, res) => {
 });
 
 
-router.route('/viewMissingdays').get(async(req,res)=>{
+router.route('/viewMissingdays').post(async(req,res)=>{
     try{
         var id=req.id;
         var u=await user.findOne({id:id});
-        res.send("missing days: "+missingDays);
+        console.log(u.missingDays);
+        
+        res.send("missing days:    "+u);
 
     }catch(err){
         console.log(err);
@@ -554,7 +561,8 @@ router.route('/viewMissingdays').get(async(req,res)=>{
 
 router.route('/viewHours').get(async(req,res)=>{
     try{
-        var id=req.id;
+        let payload=jwt.verify(req.headers.token, key);
+        var id=payload.id;
         console.log(req.id)
         var u=await user.findOne({id:id});
         var mhours=u.missinghours;

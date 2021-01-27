@@ -18,7 +18,8 @@ var key = 'el5atir';
 
 const router=express.Router();
 router.use(express.json());
-
+const cors = require('cors');
+router.use(cors());
 let payload;
 var verifyToken = async function (req, res, next) {
     try {
@@ -28,7 +29,7 @@ var verifyToken = async function (req, res, next) {
         req.userType = payload.userType;
         let i=await tokenblacklist.exists({token:req.header('token')})
        // console.log(payload.userType == 'am');
-        if (payload.userType == 'am'||payload.userType == "ci") {
+        if (payload.userType == 'am'||payload.userType == "ci"||payload.userType == "hod") {
            // res.send("You dont have permission for am you are a " +payload.userType);
            next();
         }
@@ -64,6 +65,7 @@ router.route('/viewschedule')
         res.send("please double check enterd data");
     } else {
         id=payload.id;
+        console.log(await courseschedule.find({userid:id}))
     res.send(await courseschedule.find({userid:id}));
     }
     } catch (errorx) {
@@ -103,6 +105,7 @@ router.route('/changedayoff')
         console.log(result)
         if (result.length!=0||!days.includes(req.body.newday)||req.body.newday==sender.dayoff||error!=undefined) {
            res.send("please double check enterd data")
+           console.log(error);
         } else {
             let hod =await department.findOne({department:sender.department})
             let reqs=new requests.ChangeDayoffRequest({
@@ -156,6 +159,7 @@ router.route('/annualleaverequest')
         
      if (result.length!=0||duration<=0||error!=undefined) {
         res.send("please double check enterd data")
+        console.log(error);
      } else {
         let exists=await requests.ReplacementRequest.findOne({targetdate:req.body.targetdate,course:req.body.courseid,replacementid:req.body.replacmentid,senderid:id,status:"accepted"})
         let hod =await department.findOne({department:sender.department})
@@ -219,6 +223,7 @@ router.route('/accidentalleave')
     
         if (result.length!=0||error!=undefined) {
             res.send("please double check enterd data")
+            console.log(error)
         } else {
             let reqs=new requests.AccidentalLeaveRequest
         ({
@@ -232,6 +237,7 @@ router.route('/accidentalleave')
         res.send("done")
         }
     } catch (error) {
+        console.log(error)
         res.send("err happend while in progress")
     }
     
@@ -262,6 +268,7 @@ router.route('/sickleave')
         result=result.concat(await requests.ReplacementRequest.find({id:req.body.requestid}))
         if (duration>3||duration<=0||result.length!=0||error!=undefined) {
             res.send("please double check enterd data")
+            console.log(error);
         } else {
             let id=payload.id;//will be from payload  
             let sender=await user.findOne({id:id});
@@ -312,6 +319,7 @@ router.route('/maternityleave')
     
         if (sender.gender!="female"||result.length!=0||error!=undefined) {
             res.send("please double check enterd data")
+            console.log(error)
         } else {
             let reqs=new requests.MaternityLeaveRequest
         ({
@@ -356,6 +364,7 @@ router.route('/Compensationleave')
 
     if (result.length!=0||error!=undefined) {
         res.send("please double check enterd data")
+        console.log(error)
     } else {
         let reqs=new requests.CompensationLeaveRequest
     ({
@@ -407,7 +416,7 @@ router.route('/replacmentrequest')
         result=result.concat(await requests.ChangeDayoffRequest.find({id:req.body.requestid}))
         result=result.concat(await requests.ReplacementRequest.find({id:req.body.requestid}))
     
-        // console.log(reciver);
+         //console.log(reciver);
         // console.log("dayName");
         // console.log(duration);
         // console.log("dayName");
@@ -417,19 +426,20 @@ router.route('/replacmentrequest')
         
         if (duration<=0||!reciver||!slot||result.length!=0||error!=undefined) {
             res.send("please double check enterd data")
+            console.log(error)
         } else {
             
-            let hod =await department.findOne({department:sender.department})
+            //let hod =await department.findOne({department:sender.department})
             // console.log(slot);
             // console.log("dayName");
             // console.log(result);
             let reqs=new requests.ReplacementRequest({
                 id:req.body.requestid,
                 senderid:id,
-                destinationid:hod.hod,
+                destinationid:req.body.reciverid,
                 targetdate:req.body.targetdate,
                 course:req.body.courseid,
-                replacementid:req.body.reciverid
+               // replacementid:req.body.reciverid
             })
            await reqs.save();
     
@@ -449,7 +459,7 @@ router.route('/replacmentrequest')
             res.send("please double check enterd data")
         } else {
             let id=payload.id;//will be from payload  
-            let result=await requests.ReplacementRequest.find({senderid:id})
+            let result=await requests.ReplacementRequest.find({destinationid:id,status:"pending"})
             res.send(result);
         }
     } catch (error) {
@@ -459,7 +469,28 @@ router.route('/replacmentrequest')
     
     
 })
-
+router.route('/ansewrrequest')
+.post(async(req,res)=>
+{
+    try {
+        result =await requests.ReplacementRequest.findOne({id:req.body.requestid,status:"pending"})
+        if (!result) {
+            res.send('no such request')
+        } else {
+            await requests.ReplacementRequest.findOneAndUpdate({id:req.body.requestid},{status:req.body.answer});
+            let sender=await user.findOne({id:result.senderid})
+            let not=sender.notifications;//"request :"+req.body.requestid+" is assepted "
+            let r="request :"+req.body.requestid+" is accepted "
+            not.push(r);
+           // console.log(""+not);
+            await user.findOneAndUpdate({id:sender.id},{notifications:not});
+            res.send("done");
+        }
+    } catch (error) {
+        
+    }
+   
+})
 router.route('/getnotifications')
 .get(async(req,res)=>
 {
@@ -490,13 +521,13 @@ router.route('/getrequests')
         res.send("please double check enterd data")
     } else {
         let id=payload.id;;//from payload
-        let result=await requests.annualleaverequest.find()
-        result=result.concat(await requests.CompensationLeaveRequest.find())
-        result=result.concat(await requests.AccidentalLeaveRequest.find())
-        result=result.concat(await requests.SickLeavesRequest.find())
-        result=result.concat(await requests.MaternityLeaveRequest.find())
-        result=result.concat(await requests.ChangeDayoffRequest.find())
-        result=result.concat(await requests.ReplacementRequest.find())
+        let result=await requests.annualleaverequest.find({status:"pending",senderid:id})
+        result=result.concat(await requests.CompensationLeaveRequest.find({status:"pending",senderid:id}))
+        result=result.concat(await requests.AccidentalLeaveRequest.find({status:"pending",senderid:id}))
+        result=result.concat(await requests.SickLeavesRequest.find({status:"pending",senderid:id}))
+        result=result.concat(await requests.MaternityLeaveRequest.find({status:"pending",senderid:id}))
+        result=result.concat(await requests.ChangeDayoffRequest.find({status:"pending",senderid:id}))
+        result=result.concat(await requests.ReplacementRequest.find({status:"pending",senderid:id}))
 
     res.send(result);
     }
@@ -526,6 +557,7 @@ router.route('/cancelrequest')
     
         if (result.length==0||error!=undefined) {
             res.send("please double check enterd data");
+            console.log(error)
         } else {
             let type=result[0].type;
             switch (type) {

@@ -44,6 +44,7 @@
  */
 
 
+const { string } = require('joi');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -89,7 +90,9 @@ const ChangeDayoffSchema = new Schema({//new day off cant be friday  it can be a
 const SlotLinkingSchema = new Schema({
     
     slot: {type: Number, required: true},
-    course: {type: String, required: true}
+    course: {type: String, required: true},
+    day:{type:String},
+    location:{type:String}
 });
 
 
@@ -98,7 +101,7 @@ const ReplacementSchema = new Schema({// replacment targetdate=>upcoming
     
     targetdate: {type: Date, required: true},
     course: {type: String, required: true},//his own course and ta course
-    replacementid: {type: String},//must be in same course(target ta)
+    //replacementid: {type: String},//must be in same course(target ta)
 
 });
 

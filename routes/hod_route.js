@@ -19,7 +19,8 @@ const router=express.Router();
 const tokenblacklist=require('../models/tokenBlacklist');
 const Joi=require('joi');
 router.use(express.json());
-
+const cors = require('cors');
+router.use(cors());
 let payload;
 var verifyToken = async function (req, res, next) {
     try {
@@ -256,7 +257,7 @@ router.route('/staffindept')
 })
 
 router.route('/staffincourse')
-.get(async(req,res)=>
+.post(async(req,res)=>
 {//expected input courseid from body
     try {
         const schema = Joi.object({
@@ -320,7 +321,7 @@ router.route('/getdoffall')
    })
 
    router.route('/getdoffsingle')
-   .get(async(req,res)=>
+   .post(async(req,res)=>
    {//expected input userid from payload
     try {
         const schema = Joi.object({
@@ -338,7 +339,7 @@ router.route('/getdoffall')
         }
         
     } catch (error) {
-        res.send("an err happend while in progress");
+        res.send("please double check enterd data");
     }
    
    })
@@ -346,7 +347,7 @@ router.route('/getdoffall')
 
 
 router.route('/coursecoverage')
-.get(async(req,res)=>
+.post(async(req,res)=>
 {//expected input courseid
     try {
         const schema = Joi.object({
@@ -369,7 +370,7 @@ router.route('/coursecoverage')
 
 
 router.route('/teachingassignments')
-.get(async(req,res)=>
+.post(async(req,res)=>
 {//expected input courseid
     try {
         const schema = Joi.object({
@@ -407,7 +408,7 @@ router.route('/dayoffrequest')
         {
             users[index]=item.id;
         });
-        
+        //.log(await requests.ChangeDayoffRequest.find({senderid:users,status:"pending"}))
         res.send(await requests.ChangeDayoffRequest.find({senderid:users,status:"pending"}))
     }
     } catch (error) {
@@ -437,6 +438,11 @@ router.route('/dayoffrequest')
                 } else {
                     
                         await requests.ChangeDayoffRequest.findOneAndUpdate({id:req.body.reqid,status:"pending"},{status:"rejected",comment:req.body.comment});
+                        let not=sender.notifications;//"request :"+req.body.requestid+" is assepted "
+                       let r="request :"+req.body.reqid+" is accepted "
+                       not.push(r);
+                      // console.log(""+not);
+                       await user.findOneAndUpdate({id:request.senderid},{annualleavebalance:sender.annualleavebalance-1,notifications:not});
                         res.send("done");
                 }
       }
@@ -465,7 +471,11 @@ router.route('/dayoffrequest')
                 if (!sender) {
                     res.send("please double check the data")
                 } else {
-                    
+                    let not=sender.notifications;//"request :"+req.body.requestid+" is assepted "
+                       let r="request :"+req.body.reqid+" is accepted "
+                       not.push(r);
+                      // console.log(""+not);
+                       await user.findOneAndUpdate({id:request.senderid},{annualleavebalance:sender.annualleavebalance-1,notifications:not});
                         await user.findOneAndUpdate({id:request.senderid},{dayoff:request.dayoff});
                         await requests.ChangeDayoffRequest.findOneAndUpdate({id:req.body.reqid,status:"pending"},{status:"accepted"});
                         
@@ -502,6 +512,7 @@ router.route('/leaverequests')
        result=result.concat(await requests.SickLeavesRequest.find({senderid:users,status:"pending"}))
        result=result.concat(await requests.MaternityLeaveRequest.find({senderid:users,status:"pending"}))
        res.send(result);
+       //console.log(result);
     }
     } catch (error) {
         res.send("an err happend while in progress"); 

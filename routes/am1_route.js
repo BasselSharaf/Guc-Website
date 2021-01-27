@@ -33,7 +33,8 @@ var types = ["hr", "hod", "ci", "cc", "am"];
 
 
 const router = express.Router();
-
+const cors = require('cors');
+router.use(cors());
 var verifyToken =async function (req, res, next) {
 
     try {
@@ -60,21 +61,23 @@ router.use(verifyToken);
 router.route("/sendlinkingrequest").post(async(req,res)=>{
     try{
         const schema=joi.object({
+            reqid:joi.string().required(),
             id:joi.string().required(),
             slot:joi.number().required(),
             day:joi.string().required(),
             course:joi.string().required(),
-            location:joi.string().required(),
-            destinationid:joi.string().required()
+            location:joi.string().required()
+           // destinationid:joi.string().required()
         });
         const {error,value}=schema.validate(req.body);
         if(error!=undefined){
-            res.send(error.details[0].message);
+            console.log(error)
+            res.send("please double check enterd data");
             return;
         }
 
         //check if this slot exists
-        var exists=await courseschedule.exists({
+        var exists=await courseschedule.findOne({
             courseid:value.course,day:value.day,location:value.location,slot:value.slot
         });
         if(!exists){
@@ -82,15 +85,28 @@ router.route("/sendlinkingrequest").post(async(req,res)=>{
             return;
         }
         //make the request
-        var newrequest= new requests.SlotLinkingRequest(value);
-        newrequest.senderid=req.id;
+       let destid=await courses.findOne({courseid:req.body.course})
+       console.log(destid.cordinatorid)
+        var newrequest= new requests.SlotLinkingRequest(
+            {
+                id:req.body.reqid,
+                senderid:req.body.id,
+                day:req.body.day,
+                slot:req.body.slot,
+                location:req.body.location,
+                destinationid:destid.cordinatorid,
+                course:req.body.course
+            }
+        )
+          
+        
         await newrequest.save();
         
-    res.send("linking request sent");
+    res.send("linking request sent"); 
     }catch(err){
 
         console.log(err);
-        res.send("error occurred while sending request you may try to pick different rid")
+        res.send("error occurred while sending request")
     }
 
 

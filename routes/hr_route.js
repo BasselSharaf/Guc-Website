@@ -141,7 +141,7 @@ router.route('/locationEdit')
 
         try {
             var schema=joi.object({
-                room:string().required()
+                room:joi.string().required()
             });
             var {error,value}=schema.validate(req.body);
             if(error!=undefined){
@@ -393,7 +393,6 @@ router.route("/courseEdit")
             res.send(error.details[0].message);
             return;
         }
-
         req.body.coverage=0;
         req.body.coveredslots=0;
         var newCourse=new course(req.body);
@@ -468,7 +467,8 @@ router.route("/addUser")
                 userType:joi.string().required(),
                 dayoff:joi.string(),
                 department:joi.string(),
-                faculty:joi.string()
+                faculty:joi.string(),
+                gender:joi.string()
             });
             var name = req.body.name;
             var email = req.body.email;
@@ -609,6 +609,7 @@ router.route("/editStaffMember")
 
     .put(async(req,res)=>{
         //update the department,faculty,usertype,email
+        
         try{
             const schema=joi.object({
                 staffid:joi.string().required(),
@@ -617,13 +618,14 @@ router.route("/editStaffMember")
                 faculty:joi.string(),
                 userType:joi.string(),
                 office:joi.string(),
-                dayoff:joi.string()
+                dayoff:joi.string(),
+                gender:joi.string()
             });
             
             const{error,value}=schema.validate(req.body);
             if(error!=undefined){
-                res.send(error.details[0].msg);
-                return;
+                console.log(error)
+                res.send(error.details[0].message);
             }
             var officeExists = await location.exists({
                 room: value.office
@@ -647,20 +649,21 @@ router.route("/editStaffMember")
                 value.dayoff="saturday";
                 
             }
-
+            
             await user.updateOne({id:value.staffid},value);
+            
             res.send("staff member updated ")
         }
         catch(err){
             console.log(err);
-            res.send("error has occurred while updating staff member    ");
+            res.send("error has occurred while updating staff member");
         }
     })
 
 
 //view any member attendance record
 router.route("/viewStaffAttendance")
-    .get(async(req,res)=>{
+    .post(async(req,res)=>{
         try{
             var results=await attendance.find({id:req.body.staffid},{"_id":0,"__v":0});
             if(results.length==0){

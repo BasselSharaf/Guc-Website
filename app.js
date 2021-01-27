@@ -23,8 +23,10 @@ const cc=require('./routes/cc1_route');
 //const request = require('./routes/request.js');
 const hod=require('./routes/hod_route.js');
 const ci=require('./routes/ci_routes.js');
-var app=express();
 
+var app=express();
+const cors = require('cors');
+app.use(cors());
 //var app = express();
 app.use(express.urlencoded({ extended: true })); 
 app.use(express.json());

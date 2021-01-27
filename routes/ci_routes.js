@@ -73,7 +73,7 @@ router.route('/hel')
     
 })
 router.route('/coursecoverage')
-.get(async (req,res)=>
+.post(async (req,res)=>
 {//expected input courseid[]  ciid from payload
     try {
         const schema = Joi.object({
@@ -84,6 +84,7 @@ router.route('/coursecoverage')
         let course=await courses.find({courseid:req.body.courseid,instructorid:id}).select({coverage:1,courseid:1,_id:0})
         if (course.length==0||error!=undefined) {
             res.send("please double check data");
+            console.log(error)
         }
         else 
         {
@@ -95,7 +96,7 @@ router.route('/coursecoverage')
 })
 
 router.route('/slotsassignment')
-.get(async(req,res)=>
+.post(async(req,res)=>
 {
     try {//expected input courseid[]  ciid from payload
         const schema = Joi.object({
@@ -153,7 +154,7 @@ router.route('/staffindept')
 })
 
 router.route('/staffincourse')
-.get(async(req,res)=>
+.post(async(req,res)=>
 {//expected input courseid from body
     try {
         const schema = Joi.object({
@@ -190,7 +191,7 @@ router.route('/staffincourse')
             //  console.log(out);  
         ;});   
 
-        //console.log(out); 
+        console.log(out); 
         res.send(out); 
         }  
     } catch (error) {
@@ -278,7 +279,7 @@ router.route('/assignacmemtoslot')
     }
     } catch (error) {
         console.log(error)
-        res.send("err happend while in progress");
+        res.send("please double check the data");
     }
         
     })
@@ -375,6 +376,7 @@ router.route('/removememfromcourse')
     instructor=await user.findOne({id:instructor});
     let amem=await user.findOne({id:req.body.amid,department:instructor.department,userType:"am"})
     //res.send(amem);
+    //console.log(amem)
     let obligations=await courseschedule.find({courseid:req.body.courseid,userid:req.body.amid});//acmeme
     //res.send(obligations);
     //console.log(obligations);
@@ -382,6 +384,7 @@ router.route('/removememfromcourse')
     //res.send(taught);
     if (error!=undefined||!amem||obligations.length==0||taught.length==0) {
         res.send("please double check the data");
+        //console.log(error)
     } else {
         obligations.forEach(async(item,index)=>
         {
@@ -390,7 +393,7 @@ router.route('/removememfromcourse')
         res.send("done");
     }
     } catch (error) {
-        res.send("err happend while in progress");
+        res.send("please double check the data1");
     }
     
 })
